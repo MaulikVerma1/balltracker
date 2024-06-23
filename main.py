@@ -2,12 +2,19 @@ import cv2
 from ultralytics import YOLO
 
 # Initialize YOLOv5 model
-model = YOLO('yolov5nu.pt')  
+model = YOLO('yolov5n.pt')  # Ensure the model weights path is correct
 
-# Define the video capture object
+# Define the video capture object with higher resolution
 cap = cv2.VideoCapture(0)  # 0 is the default camera
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Set width
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # Set height
 
+# Define the class ID for "book" (73 in the COCO dataset for YOLOv5)
 BOOK_CLASS_ID = 73
+
+# Detection parameters
+CONF_THRESHOLD = 0.3  # Minimum confidence to consider a detection
+IOU_THRESHOLD = 0.4  # Intersection-over-Union (IoU) threshold for NMS
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -16,7 +23,7 @@ while cap.isOpened():
         break
 
     # Perform inference
-    results = model(frame)
+    results = model(frame, conf=CONF_THRESHOLD, iou=IOU_THRESHOLD)
 
     # Debug: print the number of detections
     print(f'Detections: {len(results[0].boxes)}')
@@ -25,8 +32,8 @@ while cap.isOpened():
     for box in results[0].boxes:
         # Extract bounding box coordinates
         x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
-        conf = float(box.conf.cpu().numpy())  
-        cls = int(box.cls.cpu().numpy())      
+        conf = float(box.conf.cpu().numpy())  # Convert confidence to float
+        cls = int(box.cls.cpu().numpy())      # Convert class ID to int
 
         # Debug: print each detection
         print(f'Class: {cls}, Confidence: {conf:.2f}, Box: {x1, y1, x2, y2}')
@@ -46,3 +53,4 @@ while cap.isOpened():
 # Release the capture and destroy windows
 cap.release()
 cv2.destroyAllWindows()
+    
